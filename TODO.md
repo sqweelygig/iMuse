@@ -1,0 +1,2 @@
+* Use prettier
+* Cache scripts

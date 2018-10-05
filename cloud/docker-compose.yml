@@ -1,0 +1,20 @@
+version: '3'
+services:
+  wikidb:
+    image: 'mongo:3'
+    command: '--smallfiles --bind_ip ::,0.0.0.0'
+    volumes:
+      - '/data/db'
+  wikijs:
+    image: 'requarks/wiki:latest'
+    links:
+      - 'wikidb'
+    depends_on:
+      - 'wikidb'
+    ports:
+      - '8080:80'
+    environment:
+      WIKI_ADMIN_EMAIL: 'sqweelygig@googlemail.com'
+    volumes:
+      - './config.yml:/var/wiki/config.yml'
+      - './github.pem:/etc/wiki/keys/github.pem'
