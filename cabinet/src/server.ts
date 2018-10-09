@@ -1,4 +1,5 @@
 import * as Express from 'express';
+import { Dictionary } from 'lodash';
 import { Gpio as PiGPIO } from 'pigpio';
 import { Script } from './script';
 
@@ -13,15 +14,17 @@ export class Server {
 	];
 	private static express = Express();
 
-	constructor() {
-		const scriptsRepo = process.env.SCRIPTS_REPO || 'localhost';
+	private scriptsCache: Dictionary<Script> = {};
 
+	constructor(repo: string) {
 		Server.express.get('/do/:script', async (request, response) => {
 			try {
 				const name = request.params.script;
-				const script = new Script(scriptsRepo, name, Server.pins);
-				await script.load();
-				script.schedule();
+				if (!this.scriptsCache[name]) {
+					this.scriptsCache[name] = new Script(repo, name, Server.pins);
+					await this.scriptsCache[name].load();
+				}
+				this.scriptsCache[name].schedule();
 				response.sendStatus(200);
 			} catch (error) {
 				console.error(error);
