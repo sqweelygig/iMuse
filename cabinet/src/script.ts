@@ -4,19 +4,31 @@ import * as RequestPromise from 'request-promise';
 import { Line } from './line';
 
 export class Script {
+	public static async build(repo: string, name: string, pins: PiGPIO[]): Promise<Script> {
+		const script = new Script(repo, name, pins);
+		await script.load();
+		return script;
+	}
+
 	private static codeRegex = /<code>([\s\S]*)<\/code>/;
 
 	private readonly lines: Line[];
 	private readonly path: string;
 	private readonly pins: PiGPIO[];
 
-	constructor(repo: string, script: string, pins: PiGPIO[]) {
-		this.path = `https://${repo}/scripts/${script}`;
+	private constructor(repo: string, name: string, pins: PiGPIO[]) {
+		this.path = `https://${repo}/scripts/${name}`;
 		this.pins = pins;
 		this.lines = [];
 	}
 
-	public async load(): Promise<void> {
+	public schedule(): void {
+		forEach(this.lines, (line) => {
+			line.schedule();
+		});
+	}
+
+	private async load(): Promise<void> {
 		const page = await RequestPromise(this.path);
 		const match = page.match(Script.codeRegex);
 		if (!match) {
@@ -30,11 +42,5 @@ export class Script {
 				}
 			});
 		}
-	}
-
-	public schedule(): void {
-		forEach(this.lines, (line) => {
-			line.schedule();
-		});
 	}
 }
