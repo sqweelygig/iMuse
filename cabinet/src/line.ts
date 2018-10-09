@@ -1,5 +1,6 @@
-import { Dictionary } from 'lodash';
-import { Gpio as PiGPIO } from 'pigpio';
+import * as Bluebird from "bluebird";
+import { Dictionary } from "lodash";
+import { Gpio as Pin } from "onoff";
 
 export class Line {
 	private static multipliers: Dictionary<number> = {
@@ -18,15 +19,15 @@ export class Line {
 		secs: 1000,
 	};
 
+	// after {time} {component} should {do something}
 	private static codeRegex = /^after ([0-9]+) ?([a-z]+) (.+) should (.+)$/;
 
-	private readonly time: number;
+	public readonly time: number;
 	private readonly component: string;
 	private readonly instruction: string;
-	private readonly pins: PiGPIO[];
+	private readonly pins: Pin[];
 
-	// after {time} {component} should {do something}
-	constructor(line: string, pins: PiGPIO[]) {
+	constructor(line: string, pins: Pin[]) {
 		this.pins = pins;
 		const command = line.trim().toLowerCase();
 		const match = command.match(Line.codeRegex);
@@ -39,23 +40,21 @@ export class Line {
 		}
 	}
 
-	public schedule(): void {
-		setTimeout(
-			this.execute.bind(this),
-			this.time,
-		);
-	}
-
-	private execute(): void {
+	public async execute(): Promise<void> {
+		await Bluebird.delay(this.time);
 		switch (this.component) {
-			case 'socket a':
-				this.pins[0].digitalWrite(this.instruction === 'turn on' ? 1 : 0);
+			case "socket a":
+				this.pins[0].writeSync(this.instruction === "turn on" ? 1 : 0);
 				break;
-			case 'the fx':
+			case "socket b":
+				this.pins[1].writeSync(this.instruction === "turn on" ? 1 : 0);
+				break;
+			case "the fx":
 				break;
 			default:
-				console.error(`Command \`${this.component} should ${this.instruction}\` not recognised!`);
+				const thing = this.component;
+				const act = this.instruction;
+				console.error(`Command \`${thing} should ${act}\` not recognised!`);
 		}
-
 	}
 }
