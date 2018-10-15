@@ -22,7 +22,7 @@ export class Script {
 	private readonly lines: Line[];
 	private readonly path: string;
 	private readonly pins: Pin[];
-	private timeStarted: number;
+	private timeStarted?: number;
 
 	private constructor(repo: string, name: string, pins: Pin[]) {
 		this.path = `https://${repo}/scripts/${name}`;
@@ -36,6 +36,7 @@ export class Script {
 		await Bluebird.map(this.lines, (line) => {
 			return line.execute();
 		});
+		this.timeStarted = undefined;
 	}
 
 	public timeLeft(): number {

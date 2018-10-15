@@ -3,6 +3,10 @@ import { Gpio as Pin } from "onoff";
 import { Script } from "./script";
 
 export class ScriptQueue {
+	public static async build(repository: string): Promise<ScriptQueue> {
+		return new ScriptQueue(repository);
+	}
+
 	private scriptRunning?: Script;
 
 	private readonly queue: Script[] = [];
@@ -11,7 +15,7 @@ export class ScriptQueue {
 
 	private readonly repository: string;
 
-	public constructor(repository: string) {
+	private constructor(repository: string) {
 		this.pins[0] = new Pin(20, "out");
 		this.pins[1] = new Pin(26, "out");
 		console.log("Pins initialised.");
@@ -22,27 +26,23 @@ export class ScriptQueue {
 		const currentScriptTimeRemaining = this.scriptRunning
 			? this.scriptRunning.timeLeft()
 			: 0;
-		const foundIndex = this.queue.findIndex((s) => {
-			return s.name === name;
+		const foundIndex = this.queue.findIndex((eachScript) => {
+			return eachScript.name === name;
 		});
-		const found = foundIndex !== -1;
-		const position = found ? foundIndex : this.queue.length;
-		const scriptsAheadInQueue = this.queue.slice(0, position);
-		const queuedScriptsTimeRemaining = reduce(
-			scriptsAheadInQueue,
-			(sum, scr) => {
-				return sum + scr.timeLeft();
+		const scriptsAheadTimeRemaining = reduce(
+			foundIndex === -1 ? this.queue : this.queue.slice(0, foundIndex),
+			(sum, eachScript) => {
+				return sum + eachScript.timeLeft();
 			},
 			0,
 		);
-		if (!found) {
+		if (foundIndex === -1) {
 			const script = await Script.build(this.repository, name, this.pins);
 			this.queue.push(script);
 			this.kickQueue();
 		}
 		return {
-			ETA: queuedScriptsTimeRemaining + currentScriptTimeRemaining,
-			position,
+			ETA: scriptsAheadTimeRemaining + currentScriptTimeRemaining,
 			timestamp: new Date().getTime(),
 		};
 	}
