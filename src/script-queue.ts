@@ -1,10 +1,13 @@
 import { reduce } from "lodash";
 import { Gpio as Pin } from "onoff";
+import { DataCache } from "./data-cache";
 import { Script } from "./script";
 
 export class ScriptQueue {
-	public static async build(repository: string): Promise<ScriptQueue> {
-		return new ScriptQueue(repository);
+	public static async build(data: DataCache): Promise<ScriptQueue> {
+		const queue = new ScriptQueue(data);
+		console.log("Pins initialised.");
+		return queue;
 	}
 
 	private scriptRunning?: Script;
@@ -13,13 +16,12 @@ export class ScriptQueue {
 
 	private readonly pins: Pin[] = [];
 
-	private readonly repository: string;
+	private readonly data: DataCache;
 
-	private constructor(repository: string) {
+	private constructor(data: DataCache) {
 		this.pins[0] = new Pin(20, "out");
 		this.pins[1] = new Pin(26, "out");
-		console.log("Pins initialised.");
-		this.repository = repository;
+		this.data = data;
 	}
 
 	public async addToQueue(name: string): Promise<object> {
@@ -37,7 +39,7 @@ export class ScriptQueue {
 			0,
 		);
 		if (foundIndex === -1) {
-			const script = await Script.build(this.repository, name, this.pins);
+			const script = await Script.build(this.data, name, this.pins);
 			this.queue.push(script);
 			this.kickQueue();
 		}

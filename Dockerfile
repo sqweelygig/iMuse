@@ -1,27 +1,29 @@
 FROM resin/raspberrypi3-node
 
-RUN apt-get update && \
-	apt-get install -yq scons pigpio && \
-	apt-get clean
-
-RUN npm install -g node-gyp && \
-	npm cache clean --force
-
 WORKDIR /usr/src/imuse
 
-COPY ./cabinet/package.json ./package.json
-
-RUN JOBS=MAX npm install --unsafe-perm && \
+RUN apt-get update && \
+	apt-get install -yq scons pigpio git && \
+	apt-get clean && \
+	npm install -g node-gyp && \
 	npm cache clean --force
 
-COPY ./cabinet ./
+COPY tsconfig.json ./tsconfig.json
+COPY ssh_config /etc/ssh/ssh_config
+COPY package.json ./package.json
 
-RUN npm run build
-
-RUN rm -rf ./src
-
-RUN JOBS=MAX npm prune --production && \
+RUN npm install --unsafe-perm && \
 	npm cache clean --force
+
+COPY src ./src
+
+RUN npm run build && \
+	rm -rf ./src && \
+	rm ./tsconfig.json && \
+	npm prune --production && \
+	npm cache clean --force
+
+COPY src/assets ./build/assets
 
 # ENV INITSYSTEM on
 

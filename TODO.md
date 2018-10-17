@@ -1,13 +1,14 @@
 ## Bugs
 
-* Make show-me links open in background
+* [wiki] Make show-me links open in xhr
 
 ## Features
 
-* Make show-me response open a clock
-* Support mood lights
-* Support dim (PWM) lights
+* [wiki] Make show-me response open a clock
+* [cabinet] Support mood lights
+* [cabinet] Support dim (PWM) lights
 
 ## Improvements
 
-* Cache scripts?
+* [cabinet] Store github's known_hosts fingerprint
+* [cabinet] Shallow clone
