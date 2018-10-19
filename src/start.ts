@@ -14,14 +14,11 @@ async function start() {
 		data.clone().then(() => {
 			console.log("Data Store Populated.");
 		}),
-		server.attachWiki().then(() => {
-			console.log("Wiki Endpoints Attached.");
+		server.attachPages().then(() => {
+			console.log("Page Endpoints Attached.");
 		}),
 		server.attachMedia().then(() => {
 			console.log("Media Endpoints Attached.");
-		}),
-		server.attachAssets().then(() => {
-			console.log("Asset Endpoints Attached.");
 		}),
 	];
 	if (process.env.RESIN) {

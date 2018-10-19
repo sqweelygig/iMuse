@@ -1,6 +1,8 @@
 import * as Bluebird from "bluebird";
 import * as Express from "express";
+import { promises as FS } from "fs";
 import { JSDOM } from "jsdom";
+import { forEach } from "lodash";
 import * as marked from "marked";
 import * as Path from "path";
 import { DataCache } from "./data-cache";
@@ -14,25 +16,36 @@ export class Server {
 		this.data = data;
 	}
 
-	public async attachWiki(): Promise<void> {
+	public async attachPages(): Promise<void> {
 		this.express.get("/pages/:page", async (request, response) => {
 			try {
-				const path = Path.join("pages", `${request.params.page}.md`);
-				const templatePath = Path.join("config", "template.html");
+				const contentPath = Path.join("pages", `${request.params.page}.md`);
+				const stylePath = Path.join("config", "style.css");
+				const templatePath = Path.join(__dirname, "..", "lib", "template.html");
 				const components = await Bluebird.props({
-					content: this.data.get(path),
-					template: this.data.get(templatePath),
+					content: this.data.get(contentPath),
+					style: this.data.get(stylePath),
+					template: FS.readFile(templatePath, "utf8"),
 				});
 				const content = marked(components.content, {
-					breaks: true,
 					gfm: true,
 				});
 				const jsDom = new JSDOM(components.template);
 				const document = jsDom.window.document;
-				const contentDiv = document.getElementById("content");
+				const contentDiv = document.getElementById("page_content");
 				if (contentDiv) {
 					contentDiv.innerHTML = content;
 				}
+				const styleDiv = document.getElementById("museum_style");
+				if (styleDiv) {
+					styleDiv.innerHTML = components.style;
+				}
+				forEach(document.getElementsByTagName("a"), (link) => {
+					const href = link.getAttribute("href");
+					if (href && /resindevice\.io/.test(href)) {
+						link.setAttribute("onclick", `return show_me("${href}", this);`);
+					}
+				});
 				response.send(jsDom.serialize());
 			} catch (error) {
 				console.error(error);
@@ -50,22 +63,14 @@ export class Server {
 		});
 	}
 
-	public async attachAssets(): Promise<void> {
-		this.express.get("/assets/:asset", async (request, response) => {
-			const path = Path.join(__dirname, "assets", request.params.asset);
-			response.sendFile(path, {
-				dotfiles: "deny",
-			});
-		});
-	}
-
 	public async attachScripts(): Promise<void> {
 		const queue = await ScriptQueue.build(this.data);
 		this.express.get("/scripts/:script", async (request, response) => {
 			try {
 				const name = request.params.script;
 				const reply = await queue.addToQueue(name);
-				response.send(reply);
+				response.set("Access-Control-Allow-Origin", "*");
+				response.send(reply.toString());
 			} catch (error) {
 				console.error(error);
 				response.sendStatus(500);

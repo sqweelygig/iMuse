@@ -1,4 +1,5 @@
 import { promises as FS } from "fs";
+import * as md5 from "md5";
 import * as OS from "os";
 import * as Path from "path";
 import * as git from "simple-git/promise";
@@ -11,7 +12,8 @@ export class DataCache {
 
 	public constructor(repository: string, onUpdate: () => void) {
 		this.repo = repository;
-		this.folder = Path.join(__dirname, "..", "data");
+		this.folder = Path.join("/", "data", "/", md5(repository));
+		console.log(this.folder);
 		this.token = [
 			"-----BEGIN RSA PRIVATE KEY-----",
 			process.env.TOKEN,
@@ -32,6 +34,7 @@ export class DataCache {
 		const home = OS.homedir();
 		const keys = Path.join(home, ".ssh");
 		const file = Path.join(keys, "github");
+
 		try {
 			await FS.chmod(keys, "600");
 		} catch (error) {
@@ -41,6 +44,8 @@ export class DataCache {
 			encoding: "utf8",
 			mode: "600",
 		});
+
+		await FS.rmdir(this.folder);
 		await git().clone(this.repo, this.folder);
 		setInterval(async () => {
 			await git(this.folder).pull();

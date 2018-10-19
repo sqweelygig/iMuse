@@ -1,14 +1,14 @@
 ## Bugs
 
-* [wiki] Make show-me links open in xhr
+* [wiki] make show me fade match colour scheme
 
 ## Features
 
-* [wiki] Make show-me response open a clock
 * [cabinet] Support mood lights
 * [cabinet] Support dim (PWM) lights
 
 ## Improvements
 
+* [wiki] make first h1 into title
 * [cabinet] Store github's known_hosts fingerprint
 * [cabinet] Shallow clone

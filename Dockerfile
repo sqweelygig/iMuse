@@ -23,7 +23,7 @@ RUN npm run build && \
 	npm prune --production && \
 	npm cache clean --force
 
-COPY src/assets ./build/assets
+COPY lib ./lib
 
 # ENV INITSYSTEM on
 

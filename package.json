@@ -12,11 +12,13 @@
   "author": "Andrew Lucas <sqweelygig@gmail.com>",
   "license": "CC-BY-NC-SA-4.0",
   "dependencies": {
+    "@types/md5": "^2.1.33",
     "bluebird": "^3.5.2",
     "express": "^4.16.3",
     "jsdom": "^12.2.0",
     "lodash": "^4.17.11",
     "marked": "^0.5.1",
+    "md5": "^2.2.1",
     "node-ssh": "^5.1.2",
     "onoff": "^3.2.2",
     "promise-queue": "^2.2.5",

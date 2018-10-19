@@ -24,7 +24,7 @@ export class ScriptQueue {
 		this.data = data;
 	}
 
-	public async addToQueue(name: string): Promise<object> {
+	public async addToQueue(name: string): Promise<number> {
 		const currentScriptTimeRemaining = this.scriptRunning
 			? this.scriptRunning.timeLeft()
 			: 0;
@@ -43,10 +43,11 @@ export class ScriptQueue {
 			this.queue.push(script);
 			this.kickQueue();
 		}
-		return {
-			ETA: scriptsAheadTimeRemaining + currentScriptTimeRemaining,
-			timestamp: new Date().getTime(),
-		};
+		return (
+			scriptsAheadTimeRemaining +
+			currentScriptTimeRemaining +
+			new Date().getTime()
+		);
 	}
 
 	private kickQueue() {
