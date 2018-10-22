@@ -12,3 +12,4 @@
 * [wiki] make first h1 into title
 * [cabinet] Store github's known_hosts fingerprint
 * [cabinet] Shallow clone
+* [cabinet] WoTD security

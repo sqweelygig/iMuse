@@ -5,20 +5,13 @@ import * as Path from "path";
 import * as git from "simple-git/promise";
 
 export class DataCache {
-	private readonly repo: string;
+	private readonly remote: string;
 	private readonly folder: string;
-	private readonly token: string;
 	private readonly onUpdate: () => void;
 
-	public constructor(repository: string, onUpdate: () => void) {
-		this.repo = repository;
-		this.folder = Path.join("/", "data", "/", md5(repository));
-		console.log(this.folder);
-		this.token = [
-			"-----BEGIN RSA PRIVATE KEY-----",
-			process.env.TOKEN,
-			"-----END RSA PRIVATE KEY-----",
-		].join("\r\n");
+	public constructor(remote: string, onUpdate: () => void) {
+		this.remote = remote;
+		this.folder = Path.join("/", "data", md5(remote));
 		this.onUpdate = onUpdate;
 	}
 
@@ -31,8 +24,7 @@ export class DataCache {
 	}
 
 	public async clone(): Promise<void> {
-		const home = OS.homedir();
-		const keys = Path.join(home, ".ssh");
+		const keys = Path.join(OS.homedir(), ".ssh");
 		const file = Path.join(keys, "github");
 
 		try {
@@ -40,13 +32,24 @@ export class DataCache {
 		} catch (error) {
 			await FS.mkdir(keys, "600");
 		}
-		await FS.writeFile(file, this.token, {
-			encoding: "utf8",
-			mode: "600",
-		});
+		await FS.writeFile(
+			file,
+			[
+				"-----BEGIN RSA PRIVATE KEY-----",
+				process.env.TOKEN,
+				"-----END RSA PRIVATE KEY-----",
+			].join("\r\n"),
+			{
+				encoding: "utf8",
+				mode: "600",
+			},
+		);
 
-		await FS.rmdir(this.folder);
-		await git().clone(this.repo, this.folder);
+		try {
+			await git(this.folder).pull();
+		} catch (error) {
+			await git(Path.join("/", "data")).clone(this.remote, this.folder);
+		}
 		setInterval(async () => {
 			await git(this.folder).pull();
 			this.onUpdate();

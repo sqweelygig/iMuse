@@ -12,7 +12,6 @@
   "author": "Andrew Lucas <sqweelygig@gmail.com>",
   "license": "CC-BY-NC-SA-4.0",
   "dependencies": {
-    "@types/md5": "^2.1.33",
     "bluebird": "^3.5.2",
     "express": "^4.16.3",
     "jsdom": "^12.2.0",
@@ -24,6 +23,7 @@
     "promise-queue": "^2.2.5",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
+    "rimraf": "^2.6.2",
     "simple-git": "^1.105.0",
     "ssh2-promise": "^0.1.1"
   },
@@ -33,10 +33,12 @@
     "@types/jsdom": "^12.2.0",
     "@types/lodash": "^4.14.116",
     "@types/marked": "^0.4.2",
+    "@types/md5": "^2.1.33",
     "@types/node": "^10.11.5",
     "@types/onoff": "0.0.28",
     "@types/promise-queue": "^2.2.0",
     "@types/request-promise": "^4.1.42",
+    "@types/rimraf": "^2.0.2",
     "prettier": "^1.14.3",
     "tslint": "^5.11.0",
     "typescript": "^3.1.1"

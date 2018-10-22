@@ -3,16 +3,16 @@ import { Server } from "./server";
 
 async function start() {
 	const reportUpdate = () => {
-		console.log("Data Store Updated.");
+		console.log("Data Cache Updated.");
 	};
 	const repo = process.env.REPO || "localhost";
 	const data = new DataCache(repo, reportUpdate);
-	console.log("Data Store Initialised.");
+	console.log("Data Cache Initialised.");
 	const server = new Server(data);
 	console.log("Web Server Initialised.");
 	const promises = [
 		data.clone().then(() => {
-			console.log("Data Store Populated.");
+			console.log("Data Cache Populated.");
 		}),
 		server.attachPages().then(() => {
 			console.log("Page Endpoints Attached.");
