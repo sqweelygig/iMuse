@@ -1,7 +1,5 @@
 ## Bugs
 
-* [wiki] make show me fade match colour scheme
-
 ## Features
 
 * [cabinet] Support mood lights

@@ -21,9 +21,11 @@ export class Server {
 			try {
 				const contentPath = Path.join("pages", `${request.params.page}.md`);
 				const stylePath = Path.join("config", "style.css");
+				const scriptPath = Path.join("config", "script.js");
 				const templatePath = Path.join(__dirname, "..", "lib", "template.html");
 				const components = await Bluebird.props({
 					content: this.data.get(contentPath),
+					script: this.data.get(scriptPath),
 					style: this.data.get(stylePath),
 					template: FS.readFile(templatePath, "utf8"),
 				});
@@ -40,10 +42,15 @@ export class Server {
 				if (styleDiv) {
 					styleDiv.innerHTML = components.style;
 				}
-				forEach(document.getElementsByTagName("a"), (link) => {
-					const href = link.getAttribute("href");
+				const scriptDiv = document.getElementById("museum_script");
+				if (scriptDiv) {
+					scriptDiv.innerHTML = components.script;
+				}
+				forEach(document.getElementsByTagName("a"), (element) => {
+					const href = element.getAttribute("href");
 					if (href && /resindevice\.io/.test(href)) {
-						link.setAttribute("onclick", `return show_me("${href}", this);`);
+						const click = ["new ShowMe(this);", "return false;"].join(" ");
+						element.setAttribute("onclick", click);
 					}
 				});
 				response.send(jsDom.serialize());

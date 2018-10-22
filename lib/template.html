@@ -1,61 +1,74 @@
 <html>
 	<head>
-		<style id="museum_style"></style>
-		<script id="show_me_script">
-			function show_me(url, div) {
-				const requested = new Date().getTime();
-				let expected = undefined;
-				let intervalId = div.getAttribute("show_me_interval_id");
+		<style id="museum_style">
+			/* This gets overwritten by the museum's own style */
+		</style>
+		<script id="museum_script">
+			// This gets overwritten by the museum's own style
+			function show_me_background(
+				initiated, // When the request began in ms past 1970
+				expected, // When the cabinet will display, if known
+			) {
+				console.log(initiated, expected);
+				return ""; // The style to apply to the background
+			}
+		</script>
+		<script>
+			class ShowMe {
+				constructor(div) {
+					// Stash details from global and arguments
+					this.initiated = new Date().getTime();
+					this.renderFunction = show_me_background;
+					this.div = div;
 
-				const render = () => {
-					const now = new Date().getTime();
-					const sine = (Math.sin(now / 600) + 1) / 2;
-					const progress = (expected === undefined) ? 0 : (now - requested) / (expected - requested);
-					const remaining = 1 - progress;
-					const left = remaining * sine;
-					const right = left + progress;
-
-					div.style.background = [
-						"linear-gradient(",
-						"to right,",
-						"rgba(128,128,128,0.5) 0%,",
-						`rgba(128,128,128,0.5) ${left * 100}%,`,
-						`rgba(128,128,128,0) ${left * 100}%,`,
-						`rgba(128,128,128,0) ${right * 100}%,`,
-						`rgba(128,128,128,0.5) ${right * 100}%,`,
-						"rgba(128,128,128,0.5) 100%",
-						")",
-					].join(" ");
-
-					if (progress > 1) {
-						div.style.background = "";
-						div.setAttribute("show_me_interval_id", null);
-						window.clearInterval(intervalId);
+					// Clear any previous background animation
+					const oldIntervalId = div.getAttribute("show_me_interval_id");
+					if (oldIntervalId) {
+						window.clearInterval(parseInt(oldIntervalId));
 					}
-				};
 
-				if (intervalId) {
-					window.clearInterval(parseInt(intervalId));
+					// Set a new animation running
+					this.intervalId = window.setInterval(this.render.bind(this), 40);
+					div.setAttribute("show_me_interval_id", this.intervalId);
+
+					// Request the effect and catch the response
+					this.xhr = new XMLHttpRequest();
+					this.xhr.onreadystatechange = this.update.bind(this);
+					this.xhr.open("GET", div.getAttribute("href"));
+					this.xhr.send();
 				}
-				intervalId = window.setInterval(render, 40);
-				div.setAttribute("show_me_interval_id", intervalId.toString());
 
-				const update = () => {
-					if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-						expected = parseInt(xhr.responseText);
+				render() {
+					// If we have an ETA and it is in the past
+					if (this.expected && new Date().getTime() > this.expected) {
+						// Clear the background and the animation
+						this.div.style.background = "";
+						this.div.setAttribute("show_me_interval_id", null);
+						window.clearInterval(this.intervalId);
+					} else {
+						// Set the background from the museum's files
+						this.div.style.background = this.renderFunction(
+							this.initiated,
+							this.expected,
+						);
 					}
-				};
+				}
 
-				const xhr = new XMLHttpRequest();
-				xhr.onreadystatechange = update;
-				xhr.open('GET', url);
-				xhr.send();
+				update() {
+					// Catch the done event
+					if (this.xhr.readyState === this.xhr.DONE && this.xhr.status === 200) {
+						// Store the ETA of the effect
+						this.expected = parseInt(this.xhr.responseText);
+					}
+				}
 
-				return false;
 			}
 		</script>
 	</head>
 	<body>
-		<div id="page_content"></div>
+		<div id="page_content">
+			<!-- This gets overwritten by the page content -->
+			<a href="" onclick="new ShowMe(this); return false;"></a>
+		</div>
 	</body>
 </html>

@@ -45,6 +45,9 @@ export class DataCache {
 			},
 		);
 
+		await FS.mkdir(Path.join("/", "data"));
+		await FS.mkdir(this.folder);
+
 		try {
 			await git(this.folder).pull();
 		} catch (error) {
