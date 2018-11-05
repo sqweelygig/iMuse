@@ -18,66 +18,76 @@ export class Server {
 	}
 
 	public async attachPages(): Promise<void> {
-		this.express.get("/pages/:page", async (request, response) => {
-			try {
-				// Load resources from the data and library
-				const paths = {
-					config: Path.join("config", "config.yml"),
-					content: Path.join("pages", `${request.params.page}.md`),
-					script: Path.join("config", "script.js"),
-					style: Path.join("config", "style.css"),
-					template: Path.join(__dirname, "..", "lib", "template.html"),
-				};
-				const components = await Bluebird.props({
-					config: this.data.get(paths.config),
-					content: this.data.get(paths.content),
-					script: this.data.get(paths.script),
-					style: this.data.get(paths.style),
-					template: FS.readFile(paths.template, "utf8"),
-				});
-				const config = YML.safeLoad(components.config);
-				// Grab the document for server-side manipulation
-				const jsDom = new JSDOM(components.template);
-				const document = jsDom.window.document;
-				// Inject the content in the page
-				const contentDiv = document.getElementById("page_content");
-				const content = marked(components.content, {
-					gfm: true,
-				});
-				if (contentDiv) {
-					contentDiv.innerHTML = content;
-				}
-				// Inject the style in the page
-				const styleDiv = document.getElementById("museum_style");
-				if (styleDiv) {
-					styleDiv.innerHTML = components.style;
-				}
-				// Inject the script in the page
-				const scriptDiv = document.getElementById("museum_script");
-				if (scriptDiv) {
-					scriptDiv.innerHTML = components.script;
-				}
-				// Inject the title in the page
-				const pageTitle = components.content.match(/#(.*)/);
-				const titleDiv = document.getElementById("museum_page_title");
-				if (pageTitle && titleDiv) {
-					titleDiv.innerHTML = `${config.title} / ${pageTitle[1]}`;
-				}
-				// Manipulate links that reference resindevice.io
-				forEach(document.getElementsByTagName("a"), (element) => {
-					const href = element.getAttribute("href");
-					if (href && /resindevice\.io/.test(href)) {
-						const click = ["new ShowMe(this);", "return false;"].join(" ");
-						element.setAttribute("onclick", click);
+		this.express.get(
+			"/",
+			async (_request: Express.Request, response: Express.Response) => {
+				response.redirect("/pages/home");
+			},
+		);
+
+		this.express.get(
+			"/pages/:page",
+			async (request: Express.Request, response: Express.Response) => {
+				try {
+					// Load resources from the data and library
+					const paths = {
+						config: Path.join("config", "config.yml"),
+						content: Path.join("pages", `${request.params.page}.md`),
+						script: Path.join("config", "script.js"),
+						style: Path.join("config", "style.css"),
+						template: Path.join(__dirname, "..", "lib", "template.html"),
+					};
+					const components = await Bluebird.props({
+						config: this.data.get(paths.config),
+						content: this.data.get(paths.content),
+						script: this.data.get(paths.script),
+						style: this.data.get(paths.style),
+						template: FS.readFile(paths.template, "utf8"),
+					});
+					const config = YML.safeLoad(components.config);
+					// Grab the document for server-side manipulation
+					const jsDom = new JSDOM(components.template);
+					const document = jsDom.window.document;
+					// Inject the content in the page
+					const contentDiv = document.getElementById("page_content");
+					const content = marked(components.content, {
+						gfm: true,
+					});
+					if (contentDiv) {
+						contentDiv.innerHTML = content;
 					}
-				});
-				// Send the page on its way
-				response.send(jsDom.serialize());
-			} catch (error) {
-				console.error(error);
-				response.sendStatus(500);
-			}
-		});
+					// Inject the style in the page
+					const styleDiv = document.getElementById("museum_style");
+					if (styleDiv) {
+						styleDiv.innerHTML = components.style;
+					}
+					// Inject the script in the page
+					const scriptDiv = document.getElementById("museum_script");
+					if (scriptDiv) {
+						scriptDiv.innerHTML = components.script;
+					}
+					// Inject the title in the page
+					const pageTitle = components.content.match(/#(.*)/);
+					const titleDiv = document.getElementById("museum_page_title");
+					if (pageTitle && titleDiv) {
+						titleDiv.innerHTML = `${config.title} / ${pageTitle[1]}`;
+					}
+					// Manipulate links that reference resindevice.io
+					forEach(document.getElementsByTagName("a"), (element) => {
+						const href = element.getAttribute("href");
+						if (href && /resindevice\.io/.test(href)) {
+							const click = ["new ShowMe(this);", "return false;"].join(" ");
+							element.setAttribute("onclick", click);
+						}
+					});
+					// Send the page on its way
+					response.send(jsDom.serialize());
+				} catch (error) {
+					console.error(error);
+					response.sendStatus(500);
+				}
+			},
+		);
 	}
 
 	public async attachMedia(): Promise<void> {
