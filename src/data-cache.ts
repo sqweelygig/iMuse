@@ -24,16 +24,15 @@ export class DataCache {
 	}
 
 	public async clone(): Promise<void> {
-		const keys = Path.join(OS.homedir(), ".ssh");
-		const file = Path.join(keys, "github");
-
+		const keyDir = Path.join(OS.homedir(), ".ssh");
+		const keyFile = Path.join(keyDir, "github");
 		try {
-			await FS.chmod(keys, "600");
+			await FS.chmod(keyDir, "600");
 		} catch (error) {
-			await FS.mkdir(keys, "600");
+			await FS.mkdir(keyDir, "600");
 		}
 		await FS.writeFile(
-			file,
+			keyFile,
 			[
 				"-----BEGIN RSA PRIVATE KEY-----",
 				process.env.TOKEN,
@@ -45,14 +44,15 @@ export class DataCache {
 			},
 		);
 
-		await FS.mkdir(Path.join("/", "data"));
-		await FS.mkdir(this.folder);
-
 		try {
+			await FS.stat(this.folder);
 			await git(this.folder).pull();
 		} catch (error) {
+			await FS.mkdir(Path.join("/", "data"));
+			await FS.mkdir(this.folder);
 			await git(Path.join("/", "data")).clone(this.remote, this.folder);
 		}
+
 		setInterval(async () => {
 			await git(this.folder).pull();
 			this.onUpdate();
