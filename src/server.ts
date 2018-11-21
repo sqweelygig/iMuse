@@ -5,6 +5,7 @@ import * as YML from "js-yaml";
 import { JSDOM } from "jsdom";
 import { forEach } from "lodash";
 import * as marked from "marked";
+import * as Mixpanel from "mixpanel";
 import * as Path from "path";
 import { DataCache } from "./data-cache";
 import { ScriptQueue } from "./script-queue";
@@ -82,6 +83,11 @@ export class Server {
 					});
 					// Send the page on its way
 					response.send(jsDom.serialize());
+					// Record the visit to this page
+					const mixpanel = Mixpanel.init(config.mixpanelToken, {
+						protocol: "https",
+					});
+					mixpanel.track(`/pages/${request.params.page}`);
 				} catch (error) {
 					console.error(error);
 					response.sendStatus(500);
@@ -103,10 +109,21 @@ export class Server {
 		const queue = await ScriptQueue.build(this.data);
 		this.express.get("/scripts/:script", async (request, response) => {
 			try {
-				const name = request.params.script;
-				const reply = await queue.addToQueue(name);
+				// Add this FX script to the queue.
+				const reply = await queue.addToQueue(request.params.script);
+				// Send the page on its way
 				response.set("Access-Control-Allow-Origin", "*");
 				response.send(reply.toString());
+				// Load the configuration, for the mixpanel token
+				const configString = await this.data.get(
+					Path.join("config", "config.yml"),
+				);
+				const config = YML.safeLoad(configString);
+				// Record the visit to this page
+				const mixpanel = Mixpanel.init(config.mixpanelToken, {
+					protocol: "https",
+				});
+				mixpanel.track(`/scripts/${request.params.script}`);
 			} catch (error) {
 				console.error(error);
 				response.sendStatus(500);

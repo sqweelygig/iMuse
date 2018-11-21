@@ -19,6 +19,7 @@
     "lodash": "^4.17.11",
     "marked": "^0.5.1",
     "md5": "^2.2.1",
+    "mixpanel": "^0.10.0",
     "node-ssh": "^5.1.2",
     "onoff": "^3.2.2",
     "promise-queue": "^2.2.5",
