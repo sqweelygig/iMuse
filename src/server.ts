@@ -76,7 +76,7 @@ export class Server {
 					// Manipulate links that reference resindevice.io
 					forEach(document.getElementsByTagName("a"), (element) => {
 						const href = element.getAttribute("href");
-						if (href && /resindevice\.io/.test(href)) {
+						if (href && /balena-devices\.com/.test(href)) {
 							const click = ["new ShowMe(this);", "return false;"].join(" ");
 							element.setAttribute("onclick", click);
 						}
