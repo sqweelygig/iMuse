@@ -2,7 +2,6 @@
 
 * [cabinet] Focus LEDs lenses
 * [server] Decent URL
-* [server] Mobile render
 * [cabinet] Museum ready casing
 * [cabinet] WoTD security
 
@@ -19,3 +18,4 @@
 * [cabinet] Store github's known_hosts fingerprint
 * [cabinet] Shallow clone
 * [server] Device script link generator
+* [server] Search function

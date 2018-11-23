@@ -62,6 +62,11 @@ export class Server {
 					if (styleDiv) {
 						styleDiv.innerHTML = components.style;
 					}
+					// Inject the colour in the page
+					const colourMeta = document.getElementById("museum_colour");
+					if (colourMeta) {
+						colourMeta.setAttribute("content", config.colour);
+					}
 					// Inject the script in the page
 					const scriptDiv = document.getElementById("museum_script");
 					if (scriptDiv) {
