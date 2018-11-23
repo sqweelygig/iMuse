@@ -1,21 +1,24 @@
-import { DataCache } from "./data-cache";
+import { DataRepository } from "./data-repository";
 import { Server } from "./server";
 
 async function start() {
 	const reportUpdate = () => {
-		console.log("Data Cache Updated.");
+		console.log("Data Repository Updated.");
 	};
 	const repo = process.env.REPO || "localhost";
-	const data = new DataCache(repo, reportUpdate);
+	const data = new DataRepository(repo, reportUpdate);
 	console.log("Data Cache Initialised.");
 	const server = new Server(data);
 	console.log("Web Server Initialised.");
 	const promises = [
 		data.clone().then(() => {
-			console.log("Data Cache Populated.");
+			console.log("Data Repository Populated.");
 		}),
 		server.attachPages().then(() => {
 			console.log("Page Endpoints Attached.");
+		}),
+		server.attachProxy().then(() => {
+			console.log("Proxy Endpoints Attached.");
 		}),
 		server.attachMedia().then(() => {
 			console.log("Media Endpoints Attached.");

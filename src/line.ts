@@ -19,7 +19,7 @@ export class Line {
 		secs: 1000,
 	};
 
-	// after {time} {component} should {do something}
+	// after {timeOfFX} {component} should {do something}
 	private static codeRegex = /^after ([0-9]+) ?([a-z]+) (.+) should (.+)$/;
 
 	public readonly time: number;

@@ -1,10 +1,10 @@
 import { reduce } from "lodash";
 import { Gpio as Pin } from "onoff";
-import { DataCache } from "./data-cache";
+import { DataRepository } from "./data-repository";
 import { Script } from "./script";
 
 export class ScriptQueue {
-	public static async build(data: DataCache): Promise<ScriptQueue> {
+	public static async build(data: DataRepository): Promise<ScriptQueue> {
 		const queue = new ScriptQueue(data);
 		console.log("Pins initialised.");
 		return queue;
@@ -16,9 +16,9 @@ export class ScriptQueue {
 
 	private readonly pins: Pin[] = [];
 
-	private readonly data: DataCache;
+	private readonly data: DataRepository;
 
-	private constructor(data: DataCache) {
+	private constructor(data: DataRepository) {
 		this.pins[0] = new Pin(20, "out");
 		this.pins[1] = new Pin(26, "out");
 		this.data = data;

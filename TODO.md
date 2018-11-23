@@ -3,7 +3,6 @@
 * [cabinet] Focus LEDs lenses
 * [server] Decent URL
 * [cabinet] Museum ready casing
-* [cabinet] WoTD security
 
 ## Bugs
 
@@ -15,7 +14,9 @@
 
 ## Improvements
 
+* [server] Tidy package dependencies
 * [cabinet] Store github's known_hosts fingerprint
 * [cabinet] Shallow clone
 * [server] Device script link generator
 * [server] Search function
+* [cabinet] Do something around data_repositories /data persistence, and that it persists a rather lot of content, probably using `git remote` list

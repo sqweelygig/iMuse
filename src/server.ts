@@ -1,20 +1,26 @@
-import * as Bluebird from "bluebird";
 import * as Express from "express";
 import { promises as FS } from "fs";
-import * as YML from "js-yaml";
-import { JSDOM } from "jsdom";
-import { forEach } from "lodash";
 import * as marked from "marked";
+import * as Crypto from "crypto";
 import * as Mixpanel from "mixpanel";
+import * as Mustache from "mustache";
 import * as Path from "path";
-import { DataCache } from "./data-cache";
+import * as RequestPromise from "request-promise";
+import { DataRepository } from "./data-repository";
 import { ScriptQueue } from "./script-queue";
 
 export class Server {
-	private readonly express = Express();
-	private readonly data: DataCache;
+	private static mixpanelOpts = {
+		protocol: "https",
+	};
+	private static mediaOpts = {
+		dotfiles: "deny",
+	};
 
-	constructor(data: DataCache) {
+	private readonly express = Express();
+	private readonly data: DataRepository;
+
+	constructor(data: DataRepository) {
 		this.data = data;
 	}
 
@@ -30,68 +36,32 @@ export class Server {
 			"/pages/:page",
 			async (request: Express.Request, response: Express.Response) => {
 				try {
-					// Load resources from the data and library
-					const paths = {
-						config: Path.join("config", "config.yml"),
-						content: Path.join("pages", `${request.params.page}.md`),
-						script: Path.join("config", "script.js"),
-						style: Path.join("config", "style.css"),
-						template: Path.join(__dirname, "..", "lib", "template.html"),
+					// Get details of the config, content and template
+					const config = await this.data.getConfig();
+					const contentMD = await this.data.getContent(request.params.page);
+					const template = await FS.readFile(
+						Path.join(__dirname, "..", "themes", `${config.theme}.html`),
+						"utf8",
+					);
+					// Get the first header, used as page title
+					const pageTitle = contentMD.match(/#(.*)/);
+					// Convert the content to HTML
+					const contentHTML = marked(contentMD, {
+						gfm: true, // Github Flavoured Markdown
+					});
+					// Build the data payload we'll be displaying
+					const data = {
+						content: contentHTML,
+						museum: config.title,
+						page: pageTitle ? pageTitle[1].trim() : null,
 					};
-					const components = await Bluebird.props({
-						config: this.data.get(paths.config),
-						content: this.data.get(paths.content),
-						script: this.data.get(paths.script),
-						style: this.data.get(paths.style),
-						template: FS.readFile(paths.template, "utf8"),
-					});
-					const config = YML.safeLoad(components.config);
-					// Grab the document for server-side manipulation
-					const jsDom = new JSDOM(components.template);
-					const document = jsDom.window.document;
-					// Inject the content in the page
-					const contentDiv = document.getElementById("page_content");
-					const content = marked(components.content, {
-						gfm: true,
-					});
-					if (contentDiv) {
-						contentDiv.innerHTML = content;
-					}
-					// Inject the style in the page
-					const styleDiv = document.getElementById("museum_style");
-					if (styleDiv) {
-						styleDiv.innerHTML = components.style;
-					}
-					// Inject the colour in the page
-					const colourMeta = document.getElementById("museum_colour");
-					if (colourMeta) {
-						colourMeta.setAttribute("content", config.colour);
-					}
-					// Inject the script in the page
-					const scriptDiv = document.getElementById("museum_script");
-					if (scriptDiv) {
-						scriptDiv.innerHTML = components.script;
-					}
-					// Inject the title in the page
-					const pageTitle = components.content.match(/#(.*)/);
-					const titleDiv = document.getElementById("museum_page_title");
-					if (pageTitle && titleDiv) {
-						titleDiv.innerHTML = `${config.title} / ${pageTitle[1]}`;
-					}
-					// Manipulate links that reference resindevice.io
-					forEach(document.getElementsByTagName("a"), (element) => {
-						const href = element.getAttribute("href");
-						if (href && /balena-devices\.com/.test(href)) {
-							const click = ["new ShowMe(this);", "return false;"].join(" ");
-							element.setAttribute("onclick", click);
-						}
-					});
-					// Send the page on its way
-					response.send(jsDom.serialize());
+					// Render and send the page
+					response.send(Mustache.render(template, data));
 					// Record the visit to this page
-					const mixpanel = Mixpanel.init(config.mixpanelToken, {
-						protocol: "https",
-					});
+					const mixpanel = Mixpanel.init(
+						config.mixpanelToken,
+						Server.mixpanelOpts,
+					);
 					mixpanel.track(`/pages/${request.params.page}`);
 				} catch (error) {
 					console.error(error);
@@ -101,39 +71,76 @@ export class Server {
 		);
 	}
 
+	public async attachProxy(): Promise<void> {
+		// TODO: [improvement] combine this with the `/scripts` endpoint ...
+		// any only proxy when required.
+		this.express.get(
+			"/do",
+			async (
+				request: Express.Request,
+				response: Express.Response,
+				errorHandler: Express.NextFunction,
+			) => {
+				const cabinet = request.query.cabinet;
+				const domain = "balena-devices.com";
+				const script = request.query.script;
+				const wotd = request.query.wotd;
+				const url = `https://${cabinet}.${domain}/scripts/${script}?wotd=${wotd}`;
+				try {
+					const scriptResponse = await RequestPromise(url);
+					response.send(scriptResponse);
+				} catch (error) {
+					errorHandler(error);
+				}
+			},
+		);
+	}
+
 	public async attachMedia(): Promise<void> {
-		this.express.get("/media/:media", async (request, response) => {
-			const path = this.data.getPath(Path.join("media", request.params.media));
-			response.sendFile(path, {
-				dotfiles: "deny",
-			});
-		});
+		this.express.get(
+			"/media/:media",
+			async (request: Express.Request, response: Express.Response) => {
+				const path = this.data.getPath(
+					Path.join("media", request.params.media),
+				);
+				response.sendFile(path, Server.mediaOpts);
+			},
+		);
 	}
 
 	public async attachScripts(): Promise<void> {
 		const queue = await ScriptQueue.build(this.data);
-		this.express.get("/scripts/:script", async (request, response) => {
-			try {
-				// Add this FX script to the queue.
-				const reply = await queue.addToQueue(request.params.script);
-				// Send the page on its way
-				response.set("Access-Control-Allow-Origin", "*");
-				response.send(reply.toString());
-				// Load the configuration, for the mixpanel token
-				const configString = await this.data.get(
-					Path.join("config", "config.yml"),
-				);
-				const config = YML.safeLoad(configString);
-				// Record the visit to this page
-				const mixpanel = Mixpanel.init(config.mixpanelToken, {
-					protocol: "https",
-				});
-				mixpanel.track(`/scripts/${request.params.script}`);
-			} catch (error) {
-				console.error(error);
-				response.sendStatus(500);
-			}
-		});
+		this.express.get(
+			"/scripts/:script",
+			async (request: Express.Request, response: Express.Response) => {
+				try {
+					// Load the configuration
+					const config = await this.data.getConfig();
+					// Calculate the hash of the provided wotd
+					const hashFunction = Crypto.createHash("sha256");
+					hashFunction.update(request.query.wotd);
+					const hash = hashFunction.digest("hex");
+					if (hash.toLowerCase() === config.wotdHash.toLowerCase()) {
+						// Add this FX script to the queue.
+						const reply = await queue.addToQueue(request.params.script);
+						// Send the page on its way
+						response.send(reply.toString());
+					} else {
+						// Respond with "Unauthorised"
+						response.sendStatus(401);
+					}
+					// Record the visit to this page
+					const mixpanel = Mixpanel.init(
+						config.mixpanelToken,
+						Server.mixpanelOpts,
+					);
+					mixpanel.track(`/scripts/${request.params.script}`);
+				} catch (error) {
+					console.error(error);
+					response.sendStatus(500);
+				}
+			},
+		);
 	}
 
 	public async listen(): Promise<void> {

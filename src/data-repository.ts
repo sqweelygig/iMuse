@@ -1,10 +1,18 @@
 import { promises as FS } from "fs";
+import * as YML from "js-yaml";
 import * as md5 from "md5";
 import * as OS from "os";
 import * as Path from "path";
 import * as git from "simple-git/promise";
 
-export class DataCache {
+declare interface Config {
+	mixpanelToken: string;
+	title: string;
+	theme: string;
+	wotdHash: string;
+}
+
+export class DataRepository {
 	private readonly remote: string;
 	private readonly folder: string;
 	private readonly onUpdate: () => void;
@@ -17,6 +25,15 @@ export class DataCache {
 
 	public async get(path: string): Promise<string> {
 		return FS.readFile(this.getPath(path), "utf8");
+	}
+
+	public async getConfig(): Promise<Config> {
+		const configString = await this.get(Path.join("config", "config.yml"));
+		return YML.safeLoad(configString);
+	}
+
+	public async getContent(page: string): Promise<string> {
+		return this.get(Path.join("content", `${page}.md`));
 	}
 
 	public getPath(path: string): string {

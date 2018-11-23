@@ -1,13 +1,13 @@
 import * as Bluebird from "bluebird";
 import { forEach, maxBy } from "lodash";
 import { Gpio as Pin } from "onoff";
-import { DataCache } from "./data-cache";
+import { DataRepository } from "./data-repository";
 import { Line } from "./line";
 import * as Path from "path";
 
 export class Script {
 	public static async build(
-		data: DataCache,
+		data: DataRepository,
 		name: string,
 		pins: Pin[],
 	): Promise<Script> {
@@ -22,10 +22,10 @@ export class Script {
 
 	private readonly lines: Line[];
 	private readonly pins: Pin[];
-	private readonly data: DataCache;
+	private readonly data: DataRepository;
 	private timeStarted?: number;
 
-	private constructor(data: DataCache, name: string, pins: Pin[]) {
+	private constructor(data: DataRepository, name: string, pins: Pin[]) {
 		this.name = name;
 		this.pins = pins;
 		this.data = data;
