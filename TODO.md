@@ -1,6 +1,7 @@
 ## Blockers
 
 * [cabinet] Focus LEDs lenses
+* [server] Adapt for hosting
 * [cabinet] Museum ready casing
 
 ## Bugs
@@ -13,7 +14,6 @@
 
 ## Improvements
 
-* [server] Tidy package dependencies
 * [cabinet] Store github's known_hosts fingerprint
 * [cabinet] Shallow clone
 * [server] Device script link generator

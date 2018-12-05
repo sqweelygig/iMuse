@@ -1,6 +1,6 @@
+import * as Crypto from "crypto";
 import { promises as FS } from "fs";
 import * as YML from "js-yaml";
-import * as md5 from "md5";
 import * as OS from "os";
 import * as Path from "path";
 import * as git from "simple-git/promise";
@@ -19,7 +19,10 @@ export class DataRepository {
 
 	public constructor(remote: string, onUpdate: () => void) {
 		this.remote = remote;
-		this.folder = Path.join("/", "data", md5(remote));
+		const hash = Crypto.createHash("sha256");
+		hash.update(remote);
+		const folder = hash.digest("base64");
+		this.folder = Path.join("/", "data", folder);
 		this.onUpdate = onUpdate;
 	}
 
@@ -65,7 +68,11 @@ export class DataRepository {
 			await FS.stat(this.folder);
 			await git(this.folder).pull();
 		} catch (error) {
-			await FS.mkdir(Path.join("/", "data"));
+			try {
+				await FS.mkdir(Path.join("/", "data"));
+			} catch (error) {
+				// TODO: Double check that the error is EEXIST
+			}
 			await FS.mkdir(this.folder);
 			await git(Path.join("/", "data")).clone(this.remote, this.folder);
 		}

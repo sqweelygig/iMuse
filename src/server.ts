@@ -84,7 +84,7 @@ export class Server {
 				const cabinet = request.query.cabinet;
 				const domain = "balena-devices.com";
 				const script = request.query.script;
-				const wotd = request.query.wotd;
+				const wotd = request.query.wotd.toLowerCase();
 				const url = `https://${cabinet}.${domain}/scripts/${script}?wotd=${wotd}`;
 				try {
 					const scriptResponse = await RequestPromise(url);
@@ -117,10 +117,11 @@ export class Server {
 					// Load the configuration
 					const config = await this.data.getConfig();
 					// Calculate the hash of the provided wotd
-					const hashFunction = Crypto.createHash("sha256");
-					hashFunction.update(request.query.wotd);
-					const hash = hashFunction.digest("hex");
-					if (hash.toLowerCase() === config.wotdHash.toLowerCase()) {
+					const hash = Crypto.createHash("sha256");
+					hash.update(request.query.wotd);
+					if (
+						hash.digest("hex").toLowerCase() === config.wotdHash.toLowerCase()
+					) {
 						// Add this FX script to the queue.
 						const reply = await queue.addToQueue(request.params.script);
 						// Send the page on its way
