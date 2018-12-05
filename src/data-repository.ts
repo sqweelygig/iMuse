@@ -1,7 +1,6 @@
 import * as Crypto from "crypto";
 import { promises as FS } from "fs";
 import * as YML from "js-yaml";
-import * as OS from "os";
 import * as Path from "path";
 import * as git from "simple-git/promise";
 
@@ -14,7 +13,7 @@ declare interface Config {
 
 export class DataRepository {
 	private readonly remote: string;
-	private readonly folder: string;
+	private readonly dataFolder: string;
 	private readonly onUpdate: () => void;
 
 	public constructor(remote: string, onUpdate: () => void) {
@@ -22,12 +21,12 @@ export class DataRepository {
 		const hash = Crypto.createHash("sha256");
 		hash.update(remote);
 		const folder = hash.digest("base64");
-		this.folder = Path.join("/", "data", folder);
+		this.dataFolder = Path.join("/", "data", folder);
 		this.onUpdate = onUpdate;
 	}
 
 	public async get(path: string): Promise<string> {
-		return FS.readFile(this.getPath(path), "utf8");
+		return FS.readFile(this.getDataPath(path), "utf8");
 	}
 
 	public async getConfig(): Promise<Config> {
@@ -39,18 +38,12 @@ export class DataRepository {
 		return this.get(Path.join("content", `${page}.md`));
 	}
 
-	public getPath(path: string): string {
-		return Path.join(this.folder, path);
+	public getDataPath(path: string): string {
+		return Path.join(this.dataFolder, path);
 	}
 
 	public async clone(): Promise<void> {
-		const keyDir = Path.join(OS.homedir(), ".ssh");
-		const keyFile = Path.join(keyDir, "github");
-		try {
-			await FS.chmod(keyDir, "600");
-		} catch (error) {
-			await FS.mkdir(keyDir, "600");
-		}
+		const keyFile = Path.join("/", "usr", "src", "imuse", ".ssh", "github");
 		await FS.writeFile(
 			keyFile,
 			[
@@ -60,25 +53,22 @@ export class DataRepository {
 			].join("\r\n"),
 			{
 				encoding: "utf8",
-				mode: "600",
+				flag: "w",
+				mode: "700",
 			},
 		);
+		await FS.chmod(keyFile, "700");
 
 		try {
-			await FS.stat(this.folder);
-			await git(this.folder).pull();
+			await FS.stat(this.dataFolder);
+			await git(this.dataFolder).pull();
 		} catch (error) {
-			try {
-				await FS.mkdir(Path.join("/", "data"));
-			} catch (error) {
-				// TODO: Double check that the error is EEXIST
-			}
-			await FS.mkdir(this.folder);
-			await git(Path.join("/", "data")).clone(this.remote, this.folder);
+			await FS.mkdir(this.dataFolder);
+			await git(Path.join("/", "data")).clone(this.remote, this.dataFolder);
 		}
 
 		setInterval(async () => {
-			await git(this.folder).pull();
+			await git(this.dataFolder).pull();
 			this.onUpdate();
 		}, 5 * 60 * 1000);
 	}

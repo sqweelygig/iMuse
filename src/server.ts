@@ -100,7 +100,7 @@ export class Server {
 		this.express.get(
 			"/media/:media",
 			async (request: Express.Request, response: Express.Response) => {
-				const path = this.data.getPath(
+				const path = this.data.getDataPath(
 					Path.join("media", request.params.media),
 				);
 				response.sendFile(path, Server.mediaOpts);
@@ -146,7 +146,7 @@ export class Server {
 
 	public async listen(): Promise<void> {
 		return new Promise<void>((resolve) => {
-			this.express.listen(80, resolve);
+			this.express.listen(process.env.PORT || 80, resolve);
 		});
 	}
 }

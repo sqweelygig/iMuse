@@ -11,6 +11,7 @@
 * [cabinet] Support mood (WS2812) lights
 * [cabinet] Support dim (PWM) lights
 * [server] Page editor
+* [server] Ensure MixPanel gets all visits, even errors
 
 ## Improvements
 

@@ -1,4 +1,4 @@
 Host github.com
 	StrictHostKeyChecking no
 	UserKnownHostsFile=/dev/null
-	IdentityFile ~/.ssh/github
+	IdentityFile /usr/src/imuse/.ssh/github

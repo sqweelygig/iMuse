@@ -1,4 +1,4 @@
-FROM resin/raspberrypi3-node
+FROM node
 
 WORKDIR /usr/src/imuse
 
@@ -6,9 +6,7 @@ RUN mkdir ./.ssh --mode=700 && \
 	touch ./.ssh/github && \
 	chmod 700 ./.ssh/github
 
-RUN apt-get update && \
-	apt-get install -yq scons pigpio git && \
-	apt-get clean
+RUN mkdir /data --mode=700
 
 RUN npm install -g node-gyp && \
 	npm cache clean --force

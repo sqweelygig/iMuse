@@ -63,6 +63,10 @@
 			margin-left: 1em;
 			margin-right: 1em;
 		}
+
+		#security_bar input {
+			width: 7em;
+		}
 	</style>
 	<script>
 		// TODO: [improvement] comment the heck out of this script and commit a general tidy-up
@@ -249,6 +253,7 @@
 				this.context.fillStyle = "black";
 				this.context.fillText(this.description, centre, centre);
 
+				// TODO: There's a bug here
 				// Clear the clock if its timeOfFX has elapsed
 				if (now > this.timeOfFX + 2000) {
 					this.remove();
@@ -277,7 +282,7 @@
 			To access this museum's interactive features you must input their Word Of The Day.
 		</p>
 		<p>
-			<input placeholder="Word Of The Day" type="text" id="wotd_input" />
+			<input placeholder="Word" type="text" id="wotd_input" />
 			<input type="submit" value="Submit" />
 		</p>
 	</form>
