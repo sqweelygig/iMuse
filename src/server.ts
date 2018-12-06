@@ -1,13 +1,16 @@
+import * as Crypto from "crypto";
 import * as Express from "express";
 import { promises as FS } from "fs";
 import * as marked from "marked";
-import * as Crypto from "crypto";
 import * as Mixpanel from "mixpanel";
 import * as Mustache from "mustache";
 import * as Path from "path";
 import * as RequestPromise from "request-promise";
 import { DataRepository } from "./data-repository";
 import { ScriptQueue } from "./script-queue";
+
+// TODO Create edit route for pages
+// TODO Search in site function
 
 export class Server {
 	private static mixpanelOpts = {
@@ -137,6 +140,7 @@ export class Server {
 					);
 					mixpanel.track(`/scripts/${request.params.script}`);
 				} catch (error) {
+					// TODO [server] Ensure MixPanel gets all visits, even errors and proxies
 					console.error(error);
 					response.sendStatus(500);
 				}
