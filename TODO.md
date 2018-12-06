@@ -1,7 +1,6 @@
 ## Blockers
 
 * [cabinet] Focus LEDs lenses
-* [server] Adapt for hosting
 * [cabinet] Museum ready casing
 
 ## Bugs

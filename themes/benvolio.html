@@ -253,6 +253,10 @@
 				this.context.fillStyle = "black";
 				this.context.fillText(this.description, centre, centre);
 
+				// Clear the clock if its timeOfFX has elapsed
+				if (now > this.timeOfFX) {
+					this.remove();
+				}
 				this.onUpdate();
 			}
 
