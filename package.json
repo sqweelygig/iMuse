@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
+    "deploy": "git subtree push --prefix=cabinet resin master && git subtree push --prefix=view-server heroku master",
     "prettier": "./node_modules/.bin/prettier \"./**/*.ts\" --write"
   },
   "author": "Andrew Lucas <sqweelygig@gmail.com>",
