@@ -41,6 +41,8 @@ export class Line {
 	}
 
 	public async execute(): Promise<void> {
+		// TODO support ws2812 lights
+		// TODO support PWM output
 		await Bluebird.delay(this.time);
 		switch (this.component) {
 			case "socket a":

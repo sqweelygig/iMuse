@@ -21,6 +21,9 @@ export class DataRepository {
 		const hash = Crypto.createHash("sha256");
 		hash.update(remote);
 		const folder = hash.digest("base64");
+		// This mapping of folders keeps the full history of every repo
+		// TODO Prune data repository back log...
+		// Probably by checking git remotes
 		this.dataFolder = Path.join("/", "data", folder);
 		this.onUpdate = onUpdate;
 	}
@@ -64,6 +67,8 @@ export class DataRepository {
 			await git(this.dataFolder).pull();
 		} catch (error) {
 			await FS.mkdir(this.dataFolder);
+			// TODO store github's known_hosts fingerprint in ssh_config
+			// TODO shallow clone
 			await git(Path.join("/", "data")).clone(this.remote, this.dataFolder);
 		}
 
