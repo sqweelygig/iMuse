@@ -2,7 +2,9 @@
   "name": "imuse",
   "version": "0.0.1",
   "description": "",
-  "scripts": {},
+  "scripts": {
+    "prettier": "./node_modules/.bin/prettier \"./**/*.ts\" --write",
+  },
   "author": "Andrew Lucas <sqweelygig@gmail.com>",
   "license": "CC-BY-NC-SA-4.0",
   "dependencies": {},
