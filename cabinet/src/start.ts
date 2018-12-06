@@ -25,7 +25,7 @@ async function start() {
 
 start()
 	.then(() => {
-		console.log("Application Initialised.");
+		console.log("Application Initialised");
 	})
 	.catch((error) => {
 		console.error("Initialisation Failed.");
