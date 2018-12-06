@@ -1,0 +1,295 @@
+<html>
+<head>
+	<title>{{museum}} - {{{page}}}</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#00C000">
+	<style>
+		body {
+			font-family: sans-serif;
+			margin: 0;
+		}
+		body>*>* {
+			padding-left: 20px;
+			padding-right: 20px;
+		}
+		h1 {
+			font-family: cursive;
+			background-color: hsl(120,50%,75%);
+			border-top: 10px solid hsl(120,50%,50%);
+			border-bottom: 5px solid hsl(120,50%,50%);
+			padding-top: 20px;
+			padding-bottom: 20px;
+		}
+		h2 {
+			font-family: cursive;
+			border-top: 5px solid hsl(120,50%,50%);
+			border-bottom: 2px solid hsl(120,50%,50%);
+			margin-top: 1.6em;
+			padding-top: 10px;
+			padding-bottom: 10px;
+		}
+		img {
+			max-width: 100%;
+		}
+
+		.status_bar, #status_bar_filler {
+			border-bottom: 10px solid hsla(120,50%,50%,0);
+			border-top: 5px solid hsla(120,50%,50%,0);
+			height: 8em;
+		}
+
+		.status_bar {
+			background-color: hsl(120,50%,75%);
+			border-bottom: 10px solid hsl(120,50%,50%);
+			border-top: 5px solid hsl(120,50%,50%);
+			position: fixed;
+			bottom: 0;
+			width: 100%;
+			text-align: center;
+			margin: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
+		.status_bar.hidden {
+			display: none;
+		}
+
+		#countdown_bar>canvas {
+			width: 7em;
+			height: 7em;
+			padding: 0;
+			margin-left: 1em;
+			margin-right: 1em;
+		}
+
+		#security_bar input {
+			width: 7em;
+		}
+	</style>
+	<script>
+		// TODO: [improvement] comment the heck out of this script and commit a general tidy-up
+		class StatusBar {
+			static attachScript() {
+				return new StatusBar(
+					document.querySelector("#security_bar"),
+					document.querySelector("#countdown_bar"),
+					document.querySelector("#empty_bar"),
+					document.querySelector("#wotd_input"),
+					document.querySelectorAll("a[href^='/do']"),
+				)
+			}
+
+			constructor(securityDiv, countdownDiv, emptyDiv, securityInput, scriptLinks) {
+				// Stash the properties we'll need in multiple functions
+				this.securityDiv = securityDiv;
+				this.countdownDiv = countdownDiv;
+				this.emptyDiv = emptyDiv;
+
+				// Add listeners to the active nodes
+				this.securityDiv.addEventListener(
+					"submit",
+					this.captureSecurity.bind(this, securityInput),
+				);
+				scriptLinks.forEach((link) => {
+					link.addEventListener(
+						"click",
+						this.captureScript.bind(this, link),
+					);
+				});
+
+				// Render existing clocks
+				Object.keys(window.sessionStorage).forEach((key) => {
+					console.log(key, /^\/do/.test(key));
+					if (/^\/do/.test(key)) {
+						const details = JSON.parse(window.sessionStorage[key]);
+						if (details.timeOfFX === undefined) {
+							delete window.sessionStorage[key];
+						} else {
+							this.showBar("countdown");
+							const clock = new CountdownClock(this.countdownDiv, key, details.description, this.showBar.bind(this));
+							clock.setTime(details.timeOfFX);
+						}
+					}
+				});
+
+				// Show whichever bar is relevant
+				this.showBar();
+			}
+
+			captureScript(clickedLink, event) {
+				event.preventDefault();
+				const wotd = window.sessionStorage["security"];
+				const target = clickedLink.getAttribute("href");
+				const url = `${target}&wotd=${wotd}`;
+				this.showBar("countdown");
+				const clock = new CountdownClock(this.countdownDiv, url, clickedLink.innerText, this.showBar.bind(this));
+				const XHR = new XMLHttpRequest();
+				XHR.onreadystatechange = () => {
+					if (XHR.readyState === XHR.DONE) {
+						switch (XHR.status) {
+							case 200:
+								clock.setTime(parseInt(XHR.responseText));
+							break;
+							case 401:
+								clock.remove();
+								delete window.sessionStorage["security"];
+								this.showBar();
+							break;
+							default:
+								clock.remove();
+								this.showBar();
+						}
+					}
+				};
+				XHR.open("GET", url);
+				XHR.send();
+			}
+
+			captureSecurity(securityInput, event) {
+				event.preventDefault();
+				const wotd = securityInput.value;
+				if (wotd) {
+					window.sessionStorage["security"] = wotd;
+				} else {
+					delete window.sessionStorage["security"];
+				}
+				this.showBar();
+			}
+
+			showBar(selector) {
+				this.securityDiv.classList.add("hidden");
+				this.countdownDiv.classList.add("hidden");
+				this.emptyDiv.classList.add("hidden");
+				switch (selector) {
+					case "security":
+						this.securityDiv.classList.remove("hidden");
+						break;
+					case "countdown":
+						this.countdownDiv.classList.remove("hidden");
+						break;
+					default:
+						if (window.sessionStorage["security"] === undefined) {
+							this.securityDiv.classList.remove("hidden");
+						} else if (Object.keys(window.sessionStorage).length > 1) {
+							this.countdownDiv.classList.remove("hidden");
+						} else {
+							this.emptyDiv.classList.remove("hidden");
+						}
+						break;
+				}
+			}
+		}
+
+		class CountdownClock {
+			constructor(countdownDiv, url, description, onUpdate) {
+				this.url = url;
+				this.description = description;
+				this.onUpdate = onUpdate;
+				window.sessionStorage[this.url] = JSON.stringify({
+					description: this.description,
+				});
+
+				this.canvas = document.createElement("canvas");
+				countdownDiv.appendChild(this.canvas);
+				this.canvas.width = this.canvas.clientWidth;
+				this.canvas.height = this.canvas.clientHeight;
+
+				this.context = this.canvas.getContext("2d");
+				this.context.lineWidth = 5;
+				this.context.textAlign = "center";
+				this.context.textBaseline = "middle";
+				const fontSize = 1.7*this.canvas.width/this.description.length;
+				this.context.font=`${fontSize}px cursive`;
+				this.intervalId = window.setInterval(
+					this.render.bind(this),
+					1000/25,
+				);
+				this.onUpdate();
+			}
+
+			setTime(time) {
+				this.timeOfFX = time;
+				window.sessionStorage[this.url] = JSON.stringify({
+					description: this.description,
+					timeOfFX: this.timeOfFX,
+				});
+				this.onUpdate();
+			}
+
+			render() {
+				// Just some simple constants, calculated once (as much for line width)
+				const width = this.canvas.width;
+				const height = this.canvas.height;
+				const now = new Date().getTime();
+				const centre = Math.min(width, height)/2;
+				const radius = centre - 2.5;
+
+				// Clear the context
+				this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+				if (this.timeOfFX !== undefined) {
+					// Display clock hand
+					this.context.strokeStyle = "hsl(120,50%,50%)";
+					this.context.beginPath();
+					this.context.moveTo(centre, centre);
+					// The hand should display the remaining time to FX
+					const theta = (this.timeOfFX - now) * (Math.PI/30000);
+					const x = (Math.sin(theta) * -radius) + centre;
+					const y = (Math.cos(theta) * -radius) + centre;
+					this.context.lineTo(x, y);
+					this.context.stroke();
+				}
+
+				// An edge to the clock face
+				this.context.strokeStyle = "hsl(120,50%,50%)";
+				this.context.beginPath();
+				this.context.arc(centre, centre, radius, 0, 2*Math.PI);
+				this.context.stroke();
+
+				// Text in the middle of the clock-face
+				this.context.fillStyle = "black";
+				this.context.fillText(this.description, centre, centre);
+
+				// Clear the clock if its timeOfFX has elapsed
+				if (now > this.timeOfFX) {
+					this.remove();
+				}
+				this.onUpdate();
+			}
+
+			remove() {
+				window.clearInterval(this.intervalId);
+				delete window.sessionStorage[this.url];
+				this.canvas.parentElement.removeChild(this.canvas);
+			}
+		}
+
+		window.addEventListener(
+				"load",
+				StatusBar.attachScript,
+		);
+	</script>
+</head>
+<body>
+	<div id="page_content">{{{content}}}</div>
+	<div id="status_bar_filler"></div>
+	<form class="status_bar hidden" id="security_bar">
+		<p>
+			To access this museum's interactive features you must input their Word Of The Day.
+		</p>
+		<p>
+			<input placeholder="Word" type="text" id="wotd_input" />
+			<input type="submit" value="Submit" />
+		</p>
+	</form>
+	<div class="status_bar hidden" id="countdown_bar"></div>
+	<div class="status_bar hidden" id="empty_bar">
+		<p>
+			This museum features interactive features powered by iMuse!
+			Just click a smart link, and the cabinets will come alive.
+		</p>
+	</div>
+</body>
+</html>
