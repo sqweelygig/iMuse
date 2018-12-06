@@ -28,6 +28,4 @@ RUN npm run build && \
 	npm prune --production && \
 	npm cache clean --force
 
-COPY themes ./themes
-
 CMD ["npm", "start"]
