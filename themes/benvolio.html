@@ -234,8 +234,8 @@
 				this.context.beginPath();
 				this.context.moveTo(centre, centre);
 
-				if (this.timeOfFX === undefined || this.timeOfFX > now) {
-					// The hands should show an anti-clockwise swirl or time to FX
+				if (this.timeOfFX !== undefined) {
+					// The hand should display the remaining time to FX
 					const theta = this.timeOfFX === undefined ? now/400 : (this.timeOfFX - now) * (2*Math.PI/60000);
 					const x = (Math.sin(theta) * -radius) + centre;
 					const y = (Math.cos(theta) * -radius) + centre;
@@ -253,11 +253,6 @@
 				this.context.fillStyle = "black";
 				this.context.fillText(this.description, centre, centre);
 
-				// TODO: There's a bug here
-				// Clear the clock if its timeOfFX has elapsed
-				if (now > this.timeOfFX + 2000) {
-					this.remove();
-				}
 				this.onUpdate();
 			}
 
