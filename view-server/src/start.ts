@@ -24,13 +24,6 @@ async function start() {
 			console.log("Media Endpoints Attached.");
 		}),
 	];
-	if (process.env.RESIN) {
-		promises.push(
-			server.attachScripts().then(() => {
-				console.log("Script Endpoints Attached.");
-			}),
-		);
-	}
 	await Promise.all(promises);
 	await server.listen();
 	console.log("Server Accepting Requests.");

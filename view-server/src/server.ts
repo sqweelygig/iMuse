@@ -1,4 +1,3 @@
-import * as Crypto from "crypto";
 import * as Express from "express";
 import { promises as FS } from "fs";
 import * as marked from "marked";
@@ -7,7 +6,6 @@ import * as Mustache from "mustache";
 import * as Path from "path";
 import * as RequestPromise from "request-promise";
 import { DataRepository } from "./data-repository";
-import { ScriptQueue } from "./script-queue";
 
 // TODO Create edit route for pages
 // TODO Search in site function
@@ -75,8 +73,6 @@ export class Server {
 	}
 
 	public async attachProxy(): Promise<void> {
-		// TODO: [improvement] combine this with the `/scripts` endpoint ...
-		// any only proxy when required.
 		this.express.get(
 			"/do",
 			async (
@@ -107,43 +103,6 @@ export class Server {
 					Path.join("media", request.params.media),
 				);
 				response.sendFile(path, Server.mediaOpts);
-			},
-		);
-	}
-
-	public async attachScripts(): Promise<void> {
-		const queue = await ScriptQueue.build(this.data);
-		this.express.get(
-			"/scripts/:script",
-			async (request: Express.Request, response: Express.Response) => {
-				try {
-					// Load the configuration
-					const config = await this.data.getConfig();
-					// Calculate the hash of the provided wotd
-					const hash = Crypto.createHash("sha256");
-					hash.update(request.query.wotd);
-					if (
-						hash.digest("hex").toLowerCase() === config.wotdHash.toLowerCase()
-					) {
-						// Add this FX script to the queue.
-						const reply = await queue.addToQueue(request.params.script);
-						// Send the page on its way
-						response.send(reply.toString());
-					} else {
-						// Respond with "Unauthorised"
-						response.sendStatus(401);
-					}
-					// Record the visit to this page
-					const mixpanel = Mixpanel.init(
-						config.mixpanelToken,
-						Server.mixpanelOpts,
-					);
-					mixpanel.track(`/scripts/${request.params.script}`);
-				} catch (error) {
-					// TODO [server] Ensure MixPanel gets all visits, even errors and proxies
-					console.error(error);
-					response.sendStatus(500);
-				}
 			},
 		);
 	}

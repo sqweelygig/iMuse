@@ -1,9 +1,9 @@
 import * as Bluebird from "bluebird";
 import { forEach, maxBy } from "lodash";
 import { Gpio as Pin } from "onoff";
+import * as Path from "path";
 import { DataRepository } from "./data-repository";
 import { Line } from "./line";
-import * as Path from "path";
 
 export class Script {
 	public static async build(
@@ -34,14 +34,14 @@ export class Script {
 
 	public async execute(): Promise<void> {
 		this.timeStarted = new Date().getTime();
-		await Bluebird.map(this.lines, (line) => {
+		await Bluebird.map(this.lines, (line: Line) => {
 			return line.execute();
 		});
 		this.timeStarted = undefined;
 	}
 
 	public timeLeft(): number {
-		const lastLine = maxBy(this.lines, (line) => {
+		const lastLine = maxBy(this.lines, (line: Line) => {
 			return line.time;
 		});
 		const timeRun = this.timeStarted
