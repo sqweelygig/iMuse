@@ -14,23 +14,10 @@ async function start() {
 		data.clone().then(() => {
 			console.log("Data Repository Populated.");
 		}),
-		server.attachPages().then(() => {
-			console.log("Page Endpoints Attached.");
-		}),
-		server.attachProxy().then(() => {
-			console.log("Proxy Endpoints Attached.");
-		}),
-		server.attachMedia().then(() => {
-			console.log("Media Endpoints Attached.");
+		server.attachScripts().then(() => {
+			console.log("Script Endpoints Attached.");
 		}),
 	];
-	if (process.env.RESIN) {
-		promises.push(
-			server.attachScripts().then(() => {
-				console.log("Script Endpoints Attached.");
-			}),
-		);
-	}
 	await Promise.all(promises);
 	await server.listen();
 	console.log("Server Accepting Requests.");
