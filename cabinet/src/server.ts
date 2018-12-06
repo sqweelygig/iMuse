@@ -1,14 +1,9 @@
 import * as Crypto from "crypto";
 import * as Express from "express";
-import * as Mixpanel from "mixpanel";
 import { DataRepository } from "./data-repository";
 import { ScriptQueue } from "./script-queue";
 
 export class Server {
-	private static mixpanelOpts = {
-		protocol: "https",
-	};
-
 	private readonly express = Express();
 	private readonly data: DataRepository;
 
@@ -38,14 +33,7 @@ export class Server {
 						// Respond with "Unauthorised"
 						response.sendStatus(401);
 					}
-					// Record the visit to this page
-					const mixpanel = Mixpanel.init(
-						config.mixpanelToken,
-						Server.mixpanelOpts,
-					);
-					mixpanel.track(`/scripts/${request.params.script}`);
 				} catch (error) {
-					// TODO [server] Ensure MixPanel gets all visits, even errors and proxies
 					console.error(error);
 					response.sendStatus(500);
 				}
